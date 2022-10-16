@@ -2,8 +2,8 @@
 
 ## Vorrausetzungen
 
-- nasm
-- Visusl Studio 2022 inklusive CMake
+- [nasm](https://www.nasm.us/)
+- [Visusl Studio 2022](https://visualstudio.microsoft.com/de/) inklusive CMake
 - ein paar C Kennntnisse
 
 ## Einführung zu Registern und der Calling Convention
@@ -64,14 +64,14 @@ Zuerst legen wir ein neues Projekt in Visual Studio an und wählen dabei CMake a
 ![neues CMake Projekt](images/newproject.png)
 
 Visual Studio legt dabei auch direkt einen Unterordner mit einem cpp Hello World Programm an. Das brauchen wir aber nicht und entfernern es daher direkt zusammen mit der Header Datei. 
-Stattdessen legen wir dort eine C Datei mit dem Namen ```main.c``` an, die wir benutzen werden um unsern Assembler Code auszuführen. Das sollte dann so aussehen:
+Stattdessen legen wir dort eine C Datei mit dem Namen ```main.c``` an, die wir benutzen werden um unsern Assembler Code auszuführen. In diesem Ordner sollten auch allen anderen Dateien liegen, die wir noch anlegen. Aber erstmal sieht das nun so aus:
 
 ![Dateien](images/files1.png)
 
 ### Das erste Assembler Programm
 Anders als bei den meisten Programmiertutorials fangen wir nicht mit einem Hello World an, sondern wir implementieren die Grundrechenarten in Assembler. Das Arbeiten mit Zahlen ist in Assembler nämlich deutlicher leicher als das Arbeiten mit Strings oder gar Konsolenausgaben.
 
-Um diese Funktionen auch in C später benutzen zu können, legen wir eine Header Datei an und deklarieren darin folgende Funktionen:
+Um diese Funktionen auch in C später benutzen zu können, legen wir eine Header Datei mit dem Name ```calc.h``` an und deklarieren darin folgende Funktionen:
 ```C
 int addition(int a, int b);
 int subtraktion(int a, int b);
