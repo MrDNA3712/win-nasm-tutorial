@@ -170,6 +170,7 @@ enable_language(ASM_NASM)
 
 add_executable (nasm_tutorial main.c calc.asm)
 ```
+Dies teilt CMake mit, dass wir nasm benuzten und dass die finale Exe ```nasm_tutorial.exe``` aus den Quellcodedateien ```main.c``` und ```calc.asm``` erzeugt werden soll.
 Nun können wir unser Programm kompilieren indem wir in Visual Studio auf Erstellen -> Alle erstellen drücken oder Strg+Shift+B drücken und können es dann mit F5 ausführen oder die Schaltfläche zum Debuggen drücken. Eventuel muss die erstellte exe noch als Startelement ausgewählt werden. 
 
 ![Die exe als Startelement](images/launch_select.png)
@@ -209,7 +210,37 @@ int main(int argc, char* argv[]) {
 	
 }
 ```
-Am Ende dieses Guides findet sich auch eine Lösung mit dem Assembler Code für zum Nachprüfen oder falls Hilfe benötigt wird.
+Am Ende dieses Guides findet sich auch eine Lösung mit dem Assembler Code zum Nachprüfen oder falls Hilfe benötigt wird. Wer aber noch nicht sofort aufgeben möchte findet eventuell auch Hilfe im nächsten Kapitel.
+
+## Debugging in Visual Studio
+Wenn ein Programm mal nicht das macht was es soll, hilft es ungemein das Programm mit einem Debugger Schritt für Schritt durchgehen zu können. Zum Glück kommt Visual Studio direkt mit einem Debugger, der sich auch für unsere Assembler Programme nutzen lässt, wir müssen nur ein paar Zeilen in CMakeLists.txt hinzufügen und eventuell die Ansicht in Visual Studio anpassen um auch wirklich relevante Informationen zu sehen.
+
+### nasm mit Debug Symbolen kompilieren
+Damit der Debugger unseren Code und das ausgeführte Programm einander richtig zuordnen kann, muss nasm unseren Code mit Debug Symbolen kompilieren. Dazu fügen wir folgende Zeile in unser CMakeLists.txt ein:
+```CMake
+set(CMAKE_ASM_NASM_FLAGS_DEBUG "-g -F cv8")
+```
+Dies teilt CMake mit, dass wir beim Erstellen eines Debug-Builds die angegebenen Flags gesetzt haben wollen, was dann wiederrum nasm veranlasst die nötigen Debug Symbol in der Ausgabe mit einzuschließen. Das vollständige CMakeLists.txt sieht nun so aus:
+```CMake
+cmake_minimum_required (VERSION 3.8)
+
+enable_language(ASM_NASM)
+set(CMAKE_ASM_NASM_FLAGS_DEBUG "-g -F cv8")
+
+add_executable (nasm_tutorial main.c calc.asm)
+```
+### Den Debugger nutzen
+Der Visual Studio Debugger lasst sich nun wie gewohnt nutzen. Wir können breakpoints (oder auf deutsch "Haltepunkte") in unserem Code setzen und dann das Programm Schritt für Schritt durchgehen. Wer das nun direkt ausprobiert, dem fällt allerdings auf, dass die Überwachung der Variablen in diesem Fall gar nichts bringt da es gar keine Variablen zum Anzeigen gibt. Stattdesen können wir uns in Visual Studio aber auch den Inhalt der Register anzeigen lasssen. Dafür müssen wir erst im Menü Debuggen -> Optionen sicherstellen, dass "Debugging auf Adressebene aktivieren" ausgewählt ist:
+
+![Debugging auf Adressebene aktivieren im Optionsmenü](images/debugg_options.png)
+
+Dann können wir, wenn wir ein Programm debuggen, im Menü Debuggen -> Fenster auswählen, dass wir die Register angezeigt bekommen möchten. Die Option erscheint dort aber nur, wenn der Debugger gerade auch läuft.
+
+![Register im Debuggen Menü](images/debugg_options2.png)
+
+Wir erhalten dann ein neues Fenster, das wir wie alles Fenster in Visual Studio verschieben können, in dem wir den Inhalt der verschiedenen Register sehen können. Die Werte werden in hexadezimal dargestellt. Rote Werte sind Werte, die sich seit dem letzten Haltepunkt oder Schritt verändert haben.
+
+![Register Inhalte](images/register_debug.png)
 
 ## Lösungen
 ### Die vier Grundrechenarten
