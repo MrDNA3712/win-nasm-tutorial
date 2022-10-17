@@ -242,6 +242,64 @@ Wir erhalten dann ein neues Fenster, das wir wie alles Fenster in Visual Studio 
 
 ![Register Inhalte](images/register_debug.png)
 
+## Den Mittelsmann loswerden
+Bisher haben wir ein C Programm als Startpunkt verwendet, das dann unsere Assembler Funktionen aufruft und das Ergebnis wieder ausgibt. Heutzutage wird wahrscheinlich niemand versuchen ein Programm nur in Assembler zu schreiben, aber es ist möglich und wir werden uns nun ansehen was es dabei zu beachten gibt.
+
+### Ein neuer Startpunkt
+Als erstes werden wir eine Datei anlegen für unsere neue main Funktion. Wir legen die Datei als ```main.asm``` im selben Ordner ab wie schon unsere anderen Quelldateien. Wie schon zuvor bei den Rechenaufgaben legen wir mittels eines Labels eine neue Funktion namens ```main``` an und machen sie durch das ```GLOBAL``` keyword nach außen sichtbar. Die in der main Funktion fügen wir später noch mehr Code ein um unsere anderen Funktionen aufzurufen, aber fürs erste fügen wir nur ein ```RET``` um das Programm direkt wieder zu beenden.
+
+```asm
+GLOBAL main
+SECTION .text
+
+main:
+	RET
+```
+
+Bevor wir unseres neues Programm aber kompilieren können, müssen wir aber wieder mal ein paar Anpassungen an die CMakeLists.txt machen. Zum einen müssen wir CMake mitteilen, dass wir den Linker benutzen möchten, der auch für C benutzt wird. Aus irgendeinem Grund versucht CMake sonst, wenn keine C Dateien dabei sind, unseren Code mit nasm zu linken. nasm kann allerdings nicht linken, daher müssen CMake konfigurieren den Linker von Visual Studio zu verwenden. 
+Dann müssen wir auch noch einstellen, dass wir für unsere Exe nicht mehr ```main.c```, sondern ```main.asm``` verwenden möchten.
+
+Zuletzt müssen wir noch eine Option für den Linker setzen, um ihm mitzuteilen, dass der Einstiegspunkt in unser Programm die Funktion ```main``` ist. Das mag manch einen verwundern, weil man ja denken könnte, die Funktion ```main``` sei doch standardmäßig der Einstiegspunkt für ein C Programm, warum sollte der Linker nicht auch unsere ```main``` Funktion als Einstiegspunkt verwenden? Auf Linux würden wir tatsächlich auch keine Probleme haben unser Program so zu linken, allerdings ist hier ```main``` tatsächlich nicht der standardmäßige Einstiegspunkt, sondern eine Funktion names ```mainCRTStartup```, nachzulesen in der [Online Dokumentation des Linkers](https://learn.microsoft.com/en-us/cpp/build/reference/entry-entry-point-symbol?view=msvc-170) und mehr zu den Funktionen, die der Linker als Standardeinstiegspunkt verwendet, [hier](https://stackoverflow.com/questions/60571577/what-is-invoke-main-and-maincrtstartup).
+
+Mit den nötigen Anpassungen sieht unser CMakeLists.txt dann so aus:
+```CMake
+cmake_minimum_required (VERSION 3.8)
+
+enable_language(ASM_NASM)
+
+set(CMAKE_ASM_NASM_FLAGS_DEBUG "-g -F cv8")
+set(CMAKE_ASM_NASM_LINK_EXECUTABLE "<CMAKE_LINKER> <CMAKE_ASM_NASM_LINK_FLAGS> <LINK_FLAGS> <OBJECTS>  /OUT:<TARGET> <LINK_LIBRARIES>")
+set(CMAKE_ASM_NASM_LINK_FLAGS "/ENTRY:main")
+
+add_executable (nasm_tutorial main.asm calc.asm)
+
+```
+Wir können unser Programm nun kompiliern und ausführen. Natürlich macht unser Programm noch nichts und auch der exit code ist irgendein zufälliger Wert der am Ende der Ausführung gerade im Register RAX war.
+
+### Funktionen aufrufen
+Auch in Assembler ist es möglich andere Funktionen aufzurufen. Zum einen gibt es den Befehl ```JMP```. Mit diesem Befehl springt man in der Ausführung des Codes an eine andere Zeile/Adresse. Man könnte beispielsweise ```JMP addition``` schreiben und das Programm würde dann in seiner Ausführung zu der Funktion ```addition``` springen und diese ausführen. Allerdings funktioniert der ```JMP``` Befehl nur in eine Richtung, nach der Ausführung der Funktion kann nicht zurück zu der aufrufenden Funktion gesprungen werden, es sei denn man hätte dort ein weiteres ```JMP``` stehen das zurück springt. Das Problem dabei ist aber das man ja nicht wissen kann von wo man aufgerufen wurde und es dementsprechend schwierig ist zu wissen wohin man zurück springen sollte.
+
+Abhife schafft hier der Befehl ```CALL```. Wie auch ```JMP``` springt ```CALL``` an die angegebene Adresse einer Funktion (oder auch jeden anderen Labels). Im Unterschied zu ```JMP``` merkt sich ```CALL``` jedoch wo sich das Programm befindet bevor man in die Funktion springt. Mit einem weitern Befehl kann man dann zurück an die zuvor von ```CALL``` gemerkte Adresse zurückspringen, also zurück in die aufrufende Funktion. Dieser Befehl ist ```RET```, den wir bereits vorher benutzt haben. Deswegen hatte ich zu Beginn unseres ersten Programms auch erwähnt, dass diese ```RET``` am Ende einer Funktion so wichtig sei. Ohne das ```RET``` würde die Ausführung nicht zurück an die aufrufende Funktion springen und einfach den Code ausführen der nach der Funktion kommt. Das kann eine andere Funktion sein, es kann aber uninitialisierter Speicher sein, woduch unvorhergesehene Befehle ausgeführt werden könnten, aber wahrscheinlich wird das Programm einfach abstürzen.
+
+Für unser Programm wollen wir ```CALL``` verwenden um eine der Funktionen, die wir zuvor geschrieben haben, aufzurufen. Die Funktion, die wir aufrufen wollen befindet sich aber in einer anderen Datei, daher müsssen wir nasm mitteilen, dass sich das Label dieser Funktion in einer externen Datei und nicht in dieser Datei befindet. Das machen wir mit dem Keyword```EXTERN```, das ähnlich wie ```GLOBAL``` verwendet wird, nur dass ```EXTERN``` ein Label von außerhalb in unser Datei bekannt macht und ```GLOBAL``` ein Label aus unserer Datei nach außerhalb bekannt macht.
+
+Da wir noch keine Möglichkeit geschaffen haben irgendwie über die Konsole mit unserem Programm zu kommunizieren schreiben, rufen wir unsere Funktion mit festen Parametern auf. Als erstes legen wir unsere Parameter dafür in den entsprechenden Registern ab und rufen dann mit ```CALL``` unsere Funktion auf. Wir erhalten das Ergebnis in RAX und werden das auch erstmal da lassen, da der exit code, also der Rückgabewert der main Funktion, auch gerade unser einziger Weg ist, einen Wert aus dem Programm nach außen zu kommunizieren.
+Unser ```main.asm``` sieht nun so aus:
+```asm
+GLOBAL main
+EXTERN addition
+SECTION .text
+
+main:
+	MOV RCX, 42		; 42 als erster Parameter
+	MOV RDX, 7		; 7 als zweiter Parameter
+	CALL addition	; unsere Additionsfunktion aufrufen
+	RET				; Als exit code unseres Programms sollte
+					; uns nun 49 angezeigt werden
+```
+Anstelle von ```addition``` können wir natürlich jede andere unserer Funktionen hier verwenden, sie muss nur über ```EXTERN``` auch hier bekannt gemacht werden.
+
+
 ## Lösungen
 ### Die vier Grundrechenarten
 ```asm
