@@ -6,5 +6,6 @@ set(CMAKE_ASM_NASM_FLAGS_DEBUG "-g -F cv8")
 
 set(CMAKE_ASM_NASM_LINK_EXECUTABLE "<CMAKE_LINKER> <CMAKE_ASM_NASM_LINK_FLAGS> <LINK_FLAGS> <OBJECTS>  /OUT:<TARGET> <LINK_LIBRARIES>")
 set(CMAKE_ASM_NASM_LINK_FLAGS "/ENTRY:main")
+link_libraries("kernel32.dll")
 
 add_executable (nasm_tutorial main.asm calc.asm)

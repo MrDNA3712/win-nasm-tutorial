@@ -299,6 +299,112 @@ main:
 ```
 Anstelle von ```addition``` können wir natürlich jede andere unserer Funktionen hier verwenden, sie muss nur über ```EXTERN``` auch hier bekannt gemacht werden.
 
+## Hello World
+
+Nachdem wir nun wissen wie wir Funktionen aufrufen und unseren eigenen Einstiegspunkt festlegen können, haben wir fast alles was wir brauchen um ein Hello World Programm zu schrieben.
+
+### Ausgabe auf der Konsole
+Um Sachen auf der Konsole auszugeben, brauchen wir die Windows-API. Assembler hat natürlich nicht wie höhere Programmiersprachen eine fertige `print` Funktion, sondern wir verwenden eine Funktion von Windows um direkt etwas auf die Konsole zu schreiben. Die Funktion dafür heißt `WriteConsoleA`. Die Dokumentation dafür finden wir [hier](https://learn.microsoft.com/en-us/windows/console/writeconsole?redirectedfrom=MSDN) (der Link führt zu Dokumentation für `WriteConsole`, allerdings ist `WriteConsoleA` nur ein anderer Name für diese Funktion für ANSI Strings). Wie wir sehen hat diese Funktion 5 Parameter: einen Handle für die Konsole, einen Pointer auf den Buffer mit dem String, den wir ausgeben wollen, die Länge des String, einen Pointer auf eine Variable, die tatsächlich geschriebenen Bytes zählt und einen unbenutzten Parameter. 
+
+Um an den ersten Parameter, den Handle, zu kommen brauchen wir eine weiter Funktion `GetStdHandle`. Die Dokumentation findet sich [hier](https://learn.microsoft.com/en-us/windows/console/getstdhandle?redirectedfrom=MSDN). Diese Funktion braucht nur einen Parameter, der angibt für welche Ausgabe man den Handle haben möchte. Im unserem Fall wollen wir die Standardausgabe, also `STD_OUTPUT_HANDLE`, haben also muss der Parameter -11 sein. Die Rückgabe ist der Handle, den wir brauchen.
+
+Für den nächsten Parameter brauchen wir jedoch einen String im Arbeitsspeicher und einen zugehörigen Pointer. Bis jetzt haben wir nur mit Registern gearbeitet, aber nun lernen wir eine neue Sektion kennen um Daten im Speicher abzulegen.
+
+### Die `.data` Sektion
+Diese neue Sektion ist die `.data` Sektion. Darin befindet sich vorab initialisierter Speicher, der auch nicht mehr verändert werden kann, also quasi globale Konstanten. Wir werden sie brauchen um darin den Text zu speichern, den wir ausgeben wollen, also "Hello World!".
+
+Dazu legen wir entweder vor oder nach der `.text` Sektion die `.data` Sektion an und schreiben unsere Daten wie folgt dort hinein:
+```asm
+SECTION .data
+
+message:	db  "Hello World!", 13, 10
+msglen:		equ $-message
+```
+
+Der erste Teil `message:` ist ein Label, das wir brauchen um nacher auf diesen Speicher zuzugreifen, denn genau genommen dient ein Label dazu einen bestimmten Bereich im Arbeitsspeicher zu makieren und enthält eine Speicheradresse. Bisher haben wir Label nur benutzt um den Beginn einer Funktion zu makieren, aber auch alle Funktionen liegen bei Ausführung im Speicher. In diesem Fall makieren wir aber keinen Code im Speicher sondern Daten, was in technischer Hinsicht zwar keinen Unterschied macht, aber wir werden das Label dann natürlich anders verwenden.
+
+`db` ist eine nasm Pseudo Instruktion. Es ist eine Instruktion, die keinem tatsächlichem Maschinencode entspricht, aber dazu dient nasm mitzuteilen, dass wir im folgeneden Daten Bytes (daher auch `db`) deklarieren. Alles was wir nun in die Ziele hinter `db` wird an dieser Stelle nacheinander im Speicher abgelegt. Zuerst haben wir den String "Hello World!", der von nasm in die entsprechenden Bytes umgewandelt wird und dahinter die Bytes 13 und 10. Die Bytes 13 und 10 sind die Bytes für Carriage Return und Linefeed also die Bytes für einen Zeilenumbruch auf Windows.
+
+Die Zeile darunter beginnt ebenfalls mit einem Label gefolgt von einer weiteren Pseudo Instruktion `equ`. Diese Instruktion weist dem Label in dieser Zeile den Wert nach der Instruktion zu, also in diesem Fall `$-message`, anstelle einer Speicheradresse. `$` steht hier für die Adresse an dieser Stelle im Speicher, an der sich diese Instruktion befindet und `message` ist das Label, das wir in der Zeile darüber definiert haben. Da nasm alles was wir in die `.data` Sektion geschrieben haben nacheinander im Speicher ablegt, können wir so die Länge unseres Strings errechnen ohne selbst nachzählen zu müssen, indem wir beide Adressen subtrahieren. Die Länge des Strings steht somit im Label `msglen` und wir haben damit auch gleich den dritten Parameter für `WriteConsoleA`. Der vierte Parameter ist optional und wir werden daher einfach nur Null, statt eines Pointers übergeben und auch für den letzten ungenutzten Parameter übergeben wir nur Null.
+
+### Der finale Code
+
+Wir haben nun alles was wir brauchen um "Hello World!" auf der Konsole auszugeben. Den Code fügen wir in der `main` über dem Code aus dem vorigen Abschnitt ein. Der erste Funktionsaufruf sollte noch sehr leicht sein:
+```asm
+SECTION .text
+
+main:
+	MOV RCX, -11			; -11 als Parameter um STD_OUTPUT_HANDLE zu bekommen
+	CALL GetStdHandle
+```
+Zusätzlich müssen wir auch noch die Funktionen `GetStdHandle` und `WriteConsoleA` mithilfe von `GLOBAL` bekannt machen.
+```asm 
+EXTERN GetStdHandle
+EXTERN WriteConsoleA
+```
+Nun müssen die Parameter für den nächsten Aufruf in die entsprechenden Register geschrieben werden. Den fünften Parameter müssen wir laut Calling Convention auf dem Stack ablegen, den werden wir aber erst später behandeln, daher werde ich die Zeile hier noch nicht erklären. 
+```asm
+main:
+	MOV RCX, -11			; -11 als Parameter um STD_OUTPUT_HANDLE zu bekommen
+	CALL GetStdHandle
+	MOV RCX, RAX			; Der Handle als erster Parameter für den nächsten Aufruf
+	MOV RDX, message		; Pointer auf den String
+	MOV R8, msglen			; Länge des Strings
+	MOV R9, 0				; Null als vierter Paramter
+	MOV dword [RSP+20h],0	; Fünfter Paramter auf den Stack, auch Null
+	CALL WriteConsoleA		
+```
+Dieser Code funktioniert aber so noch nicht. Standardmäßig verwendet nasm absolute Adressen für Label. Da wir in x64 arbeiten, können wir die hier aber nicht benutzen. Daher fügen wir oben im Code noch `DEFAULT REL` ein, um nasm anzuweisen relative Adressen zu verwenden.
+Der fertige Code, einschließlich des Code aus der vorigen AUfgabe für unser Hello World Programm sieht dann so aus:
+```asm
+GLOBAL main
+EXTERN addition
+EXTERN GetStdHandle
+EXTERN WriteConsoleA
+
+DEFAULT REL
+
+SECTION .data
+
+message:	db  "Hello World!", 13, 10
+msglen:		equ $-message
+
+SECTION .text
+
+main:
+	MOV RCX, -11			; -11 als Parameter um STD_OUTPUT_HANDLE zu bekommen
+	CALL GetStdHandle
+	MOV RCX, RAX			; Der Handle als erster Parameter für den nächsten Aufruf
+	MOV RDX, message		; Pointer auf den String
+	MOV R8, msglen			; Länge des Strings
+	MOV R9, 0				; Null als vierter Paramter
+	MOV dword [RSP+20h],0	; Fünfter Paramter auf den Stack, auch Null
+	CALL WriteConsoleA		
+
+	MOV RCX, 42				; 42 als erster Parameter
+	MOV RDX, 7				; 7 als zweiter Parameter
+	CALL addition			; unsere Additionsfunktion aufrufen
+	RET						; Als exit code unseres Programms sollte
+							; uns nun 49 angezeigt werden
+```
+ Bevor wir das und kompilieren und ausführen können, fehlt aber noch eine Sache. Wir müssen den Linker anweisen, die unser Programm mit der `kernel32.dll` zu verlinken, denn darin befinden sich die beiden Windows Funktionen die wir verwendet haben. Anderfalls würde der Linker die Funktionen nicht finden und das Linken würde fehlschlagen. Wir fügen dem CMakeLists.txt dazu eine weitere Zeile hinzu:
+ ```cmake
+ cmake_minimum_required (VERSION 3.8)
+
+enable_language(ASM_NASM)
+
+set(CMAKE_ASM_NASM_FLAGS_DEBUG "-g -F cv8")
+
+set(CMAKE_ASM_NASM_LINK_EXECUTABLE "<CMAKE_LINKER> <CMAKE_ASM_NASM_LINK_FLAGS> <LINK_FLAGS> <OBJECTS>  /OUT:<TARGET> <LINK_LIBRARIES>")
+set(CMAKE_ASM_NASM_LINK_FLAGS "/ENTRY:main")
+link_libraries("kernel32.dll")
+
+add_executable (nasm_tutorial main.asm calc.asm)
+ ```
+Nun können wir unser Programm ausführen und sehen endlich ein Hello World.
+
+![Hello World](images/hello.png)
+
 
 ## Lösungen
 ### Die vier Grundrechenarten
