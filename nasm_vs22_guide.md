@@ -7,7 +7,7 @@
 - ein paar C Kennntnisse
 
 ## Einführung zu Registern und der Calling Convention
-Anders als in gewöhlichen Programmiersprachen arbeitet man in Assembler nicht mit Variablen sondern mit Prozzesorregistern. Ein Register ist eine kleine Speichereinheit im Prozessor mit einer Größe von 8 Byte (auf einem x64 System), in denen beliebige 8 Byte große Werte gespeichert werden können. Da 8 Byte wahrscheinlich ziemlich wenig wären gibt es zum Glück 16 Register im Prozessor, diese haben die folgenden Namen:
+Anders als in gewöhlichen Programmiersprachen arbeitet man in Assembler nicht mit Variablen sondern mit Prozzesorregistern. Ein Register ist eine kleine Speichereinheit im Prozessor mit einer Größe von 8 Byte (auf einem x64 System), in denen beliebige 8 Byte große Werte gespeichert werden können. Da 8 Byte wahrscheinlich ziemlich wenig wären, gibt es zum Glück 16 Register im Prozessor, diese haben die folgenden Namen:
 - RAX
 - RCX
 - RDX
@@ -25,7 +25,7 @@ Anders als in gewöhlichen Programmiersprachen arbeitet man in Assembler nicht m
 - RSI
 - RSP
 
-Es gibt noch einige weitere Register, die nicht aber nicht direkt veränderlich sind oder nur für bestimmte Operationen gebraucht werden, dazu kommen wir aber zu gegebener Zeit. Außerdem möchte ich noch davor warnen die unteren 9 Register, also alles unter R11 in dieser Liste, einfach so zu überschrieben, sofern man nicht weiß was man da tut, dazu werden auch noch im Einzelnen später kommen.
+Es gibt noch einige weitere Register, die aber nicht direkt veränderlich sind oder nur für bestimmte Operationen gebraucht werden, dazu kommen wir aber zu gegebener Zeit. Außerdem möchte ich noch davor warnen die unteren 9 Register, also alles unter R11 in dieser Liste, einfach so zu überschrieben, sofern man nicht weiß was man da tut, dazu werden auch noch im Einzelnen später kommen.
 
 Wenn man in Assembler eine Funktion aufruft müssen auch die Parameter dieser Funktion mithilfe von Registern übergeben werden. Dazu werden die Paramter der Funktion in Registern gespeichert bevor die Funktion aufgerufen wird. Die aufgerufene Funktion findet ihre Parameter dann in den entsprechenden Registern. Um zu regeln welche Parameter in welches Register gespeichert werden, gibt es die Calling Convention. Windows und Linux haben jeweils eine eigene Calling Convention. Für den Anfang reicht es aber erstmal zu wissen, wie auf Windows Parameter übergeben werden. Der erste Parameter einer Funktion wird im Register RCX gespeichert, der zweite im Register RDX, der dritte in R8 und der vierte in R9 oder übersichtlicher so:
 
@@ -46,7 +46,7 @@ Wenn man in Assembler eine Funktion aufruft müssen auch die Parameter dieser Fu
   </tr>
 </table>
 
-Auch der Rückgabewert einer Funktion muss in ein Register gespeichert, in das Register RAX um genau zu sein. Bevor eine Funktion endet und mit return zurückkehrt, wird der Rückgabewert in RAX abgelegt.
+Auch der Rückgabewert einer Funktion muss in ein Register gespeichert werden, in das Register RAX um genau zu sein. Bevor eine Funktion endet und mit return zurückkehrt, wird der Rückgabewert in RAX abgelegt.
 
 Wenn man also eine Funktion hat, die in C so aussähe:
 ```C
@@ -69,7 +69,7 @@ Stattdessen legen wir dort eine C Datei mit dem Namen ```main.c``` an, die wir b
 ![Dateien](images/files1.png)
 
 ### Das erste Assembler Programm
-Anders als bei den meisten Programmiertutorials fangen wir nicht mit einem Hello World an, sondern wir implementieren die Grundrechenarten in Assembler. Das Arbeiten mit Zahlen ist in Assembler nämlich deutlicher leicher als das Arbeiten mit Strings oder gar Konsolenausgaben.
+Anders als bei den meisten Programmiertutorials fangen wir nicht mit einem Hello World an, sondern wir implementieren die Grundrechenarten in Assembler. Das Arbeiten mit Zahlen ist in Assembler nämlich deutlicher leichter als das Arbeiten mit Strings oder gar Konsolenausgaben.
 
 Um diese Funktionen auch in C später benutzen zu können, legen wir eine Header Datei mit dem Name ```calc.h``` an und deklarieren darin folgende Funktionen:
 ```C
@@ -92,7 +92,7 @@ SECTION .text
 addition:
 
 ```
-Damit ist jetzt gekennzeichnet ab wo der Code für die Funktion ```addition``` beginnt. Aber Label sind nicht für externe Dateien sichtbar, d.h. der Linker würde unsere Funktion immer noch nicht finden. Mithilfe des Keywords ```GLOBAL``` können wir ein Label aber auch nach außen hin sichtbar machen. Dazu schrieben wir oben an den Anfang unserer Datei das Keyword ```GLOBAL``` und dann unser Label:
+Damit ist jetzt gekennzeichnet ab wo der Code für die Funktion ```addition``` beginnt. Aber Label sind nicht für externe Dateien sichtbar, d.h. der Linker würde unsere Funktion immer noch nicht finden. Mithilfe des Keywords ```GLOBAL``` können wir ein Label aber auch nach außen hin sichtbar machen. Dazu schreiben wir oben an den Anfang unserer Datei das Keyword ```GLOBAL``` und dann unser Label:
 ```asm
 GLOBAL addition
 SECTION .text
@@ -162,7 +162,7 @@ Der Code ruft unsere ```addition``` Funktion auf mit Parametern aus der Kommando
 
 ### CMake anpassen und kompilieren
 Visual Studio hat für uns bei der Erstellung des Projekts zwei CMakeLists.txt angelegt. Wir brauchen aber nur die CMakeLists.txt, die in dem Ordner mit unserem Code liegt. 
-Um unser Programm kompilieren zu können müssen wir CMake nur mitteilen, dass wir nasm verwenden und welche Dateien wir zur Exe hinzugefügt haben wollen.  Den von Visual Studio erstellten überschreiben wir einfach mit:
+Um unser Programm kompilieren zu können müssen wir CMake nur mitteilen, dass wir nasm verwenden und welche Dateien wir zur Exe hinzugefügt haben wollen.  Den von Visual Studio erstellten Code überschreiben wir einfach mit:
 ```CMake
 cmake_minimum_required (VERSION 3.8)
 
@@ -175,7 +175,7 @@ Nun können wir unser Programm kompilieren indem wir in Visual Studio auf Erstel
 
 ![Die exe als Startelement](images/launch_select.png)
 
-Und nun können wir das Ergebnis unserer Rechnung mithilfe unseres ersten Assembler Programms bewundern:
+Und nun können wir das Ergebnis der Rechnung mithilfe unseres ersten Assembler Programms bewundern:
 
 ![12 + 3 = 15](images/run1.png)
 
@@ -210,7 +210,7 @@ int main(int argc, char* argv[]) {
 	
 }
 ```
-Am Ende dieses Guides findet sich auch eine Lösung mit dem Assembler Code zum Nachprüfen oder falls Hilfe benötigt wird. Wer aber noch nicht sofort aufgeben möchte findet eventuell auch Hilfe im nächsten Kapitel.
+Am Ende dieses Guides findet sich auch eine Lösung mit dem Assembler Code zum Nachprüfen oder falls Hilfe benötigt wird. Wer aber noch nicht sofort aufgeben möchte, findet eventuell auch Hilfe im nächsten Kapitel.
 
 ## Debugging in Visual Studio
 Wenn ein Programm mal nicht das macht was es soll, hilft es ungemein das Programm mit einem Debugger Schritt für Schritt durchgehen zu können. Zum Glück kommt Visual Studio direkt mit einem Debugger, der sich auch für unsere Assembler Programme nutzen lässt, wir müssen nur ein paar Zeilen in CMakeLists.txt hinzufügen und eventuell die Ansicht in Visual Studio anpassen um auch wirklich relevante Informationen zu sehen.
@@ -220,7 +220,7 @@ Damit der Debugger unseren Code und das ausgeführte Programm einander richtig z
 ```CMake
 set(CMAKE_ASM_NASM_FLAGS_DEBUG "-g -F cv8")
 ```
-Dies teilt CMake mit, dass wir beim Erstellen eines Debug-Builds die angegebenen Flags gesetzt haben wollen, was dann wiederrum nasm veranlasst die nötigen Debug Symbol in der Ausgabe mit einzuschließen. Das vollständige CMakeLists.txt sieht nun so aus:
+Dies teilt CMake mit, dass wir beim Erstellen eines Debug-Builds die angegebenen Flags gesetzt haben wollen, was dann wiederrum nasm veranlasst die nötigen Debug Symbole in der Ausgabe mit einzuschließen. Das vollständige CMakeLists.txt sieht nun so aus:
 ```CMake
 cmake_minimum_required (VERSION 3.8)
 
@@ -230,7 +230,7 @@ set(CMAKE_ASM_NASM_FLAGS_DEBUG "-g -F cv8")
 add_executable (nasm_tutorial main.c calc.asm)
 ```
 ### Den Debugger nutzen
-Der Visual Studio Debugger lasst sich nun wie gewohnt nutzen. Wir können breakpoints (oder auf deutsch "Haltepunkte") in unserem Code setzen und dann das Programm Schritt für Schritt durchgehen. Wer das nun direkt ausprobiert, dem fällt allerdings auf, dass die Überwachung der Variablen in diesem Fall gar nichts bringt da es gar keine Variablen zum Anzeigen gibt. Stattdesen können wir uns in Visual Studio aber auch den Inhalt der Register anzeigen lasssen. Dafür müssen wir erst im Menü Debuggen -> Optionen sicherstellen, dass "Debugging auf Adressebene aktivieren" ausgewählt ist:
+Der Visual Studio Debugger lässt sich nun wie gewohnt nutzen. Wir können breakpoints (oder auf deutsch "Haltepunkte") in unserem Code setzen und dann das Programm Schritt für Schritt durchgehen. Wer das nun direkt ausprobiert, dem fällt allerdings auf, dass die Überwachung der Variablen in diesem Fall gar nichts bringt da es gar keine Variablen zum Anzeigen gibt. Stattdesen können wir uns in Visual Studio aber auch den Inhalt der Register anzeigen lasssen. Dafür müssen wir erst im Menü Debuggen -> Optionen sicherstellen, dass "Debugging auf Adressebene aktivieren" ausgewählt ist:
 
 ![Debugging auf Adressebene aktivieren im Optionsmenü](images/debugg_options.png)
 
